@@ -1,0 +1,15 @@
+
+/node_modules/
+package-lock.json
+
+
+.env
+.env.local
+
+
+.sass-cache/
+style.css.map
+
+
+.DS_Store
+Thumbs.db

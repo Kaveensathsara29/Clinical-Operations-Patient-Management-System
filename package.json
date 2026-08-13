@@ -1,0 +1,13 @@
+{
+  "name": "master-clinic-spa",
+  "version": "1.0.0",
+  "description": "MASTER Health Super Clinic System - Single Page Application",
+  "scripts": {
+    "build:css": "sass style.scss style.css",
+    "watch:css": "sass --watch style.scss:style.css",
+    "dev": "sass --watch style.scss:style.css"
+  },
+  "devDependencies": {
+    "sass": "^1.102.0"
+  }
+}

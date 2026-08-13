@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MASTER Health Super Clinic System</title>
+    <meta name="description" content="MASTER Health Super Clinic Management System - Single Page Application">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN for interactive visual analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF & AutoTable for PDF report generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <link rel="icon" type="image/svg+xml" href="public/favicon-svg.svg">
+    <style>
+        /* Report View specific utility styles (kept out of SCSS to leave SCSS 100% untouched) */
+        .spa-view {
+            display: none;
+        }
+
+        .spa-view.active {
+            display: block;
+        }
+
+        .report-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .report-summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .report-summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .report-kpi {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 20px 22px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .report-kpi:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .report-kpi-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .report-kpi-icon.blue {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .report-kpi-icon.green {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .report-kpi-icon.purple {
+            background: var(--purple-light);
+            color: var(--purple);
+        }
+
+        .report-kpi-icon.orange {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .report-kpi-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .report-kpi-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .report-tabs {
+            display: flex;
+            gap: 6px;
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 6px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .report-tab {
+            flex: 1;
+            min-width: 140px;
+            padding: 10px 14px;
+            border: none;
+            background: transparent;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+        }
+
+        .report-tab:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .report-tab.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+        }
+
+        .report-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .report-toolbar label {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .report-date-input {
+            padding: 9px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: inherit;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .report-date-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .report-summary-box {
+            background: var(--primary-light);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            border-radius: var(--radius-md);
+            padding: 14px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .report-summary-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- =========================================================================
+         1. LOGIN VIEW SECTION
+         ========================================================================= -->
+    <div id="login-view" style="display: none;">
+        <div class="login-body" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
+            <div class="login-card">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-square-h"></i>
+                    <h1>MASTER Healthcare</h1>
+                </div>
+                <h2>Super Clinic Portal</h2>
+                <p class="sub-title">Sign in to access clinic dashboard & medical records</p>
+
+                <!-- Demo credentials hint -->
+                <div class="demo-credentials">
+                    <i class="fa-solid fa-key"></i>
+                    <span>Demo: User: <code>admin</code> | Pass: <code>123</code></span>
+                </div>
+
+                <div id="error-box" class="toast toast-error" style="display: none; margin-bottom: 20px;"></div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username / ID</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="text" id="username" placeholder="Enter admin username" value="admin" required autocomplete="username">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Security Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock"></i>
+                            <input type="password" id="password" placeholder="Enter password" value="123" required autocomplete="current-password">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn" id="loginBtn">
+                        <i class="fa-solid fa-right-to-bracket"></i> Sign In to Portal
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         2. MAIN SPA APPLICATION VIEW (App Shell)
+         ========================================================================= -->
+    <div id="app-view" style="display: none;">
+        <div class="dashboard-container">
+            <!-- Sidebar Navigation -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <i class="fa-solid fa-square-h"></i>
+                    <h2>MASTER<span>Clinic</span></h2>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <div class="nav-category">Main Menu</div>
+                    <ul>
+                        <li><a href="#dashboard" class="nav-link active"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+                        <li><a href="#patients" class="nav-link"><i class="fa-solid fa-hospital-user"></i> Patients</a></li>
+                        <li><a href="#appointments" class="nav-link"><i class="fa-solid fa-calendar-check"></i> Appointments</a></li>
+                        <li><a href="#billing" class="nav-link"><i class="fa-solid fa-file-invoice-dollar"></i> Billing & Revenue</a></li>
+                        <li><a href="#doctors" class="nav-link"><i class="fa-solid fa-user-doctor"></i> Doctor Schedules</a></li>
+                        <li><a href="#reports" class="nav-link"><i class="fa-solid fa-chart-bar"></i> Reports</a></li>
+                    </ul>
+
+                    <div class="nav-category">Account</div>
+                    <ul>
+                        <li><a href="#" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</a></li>
+                    </ul>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="user-mini">
+                        <div class="avatar" id="userAvatar">AD</div>
+                        <div class="user-info">
+                            <div class="name" id="userFullName">Admin</div>
+                            <div class="role" id="userRole">Administrator</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="main-content">
+                <!-- Top Header -->
+                <header class="top-header">
+                    <div class="header-left">
+                        <div class="page-title">
+                            <h2 id="pageTitleHeading">Clinic Overview</h2>
+                            <p id="pageTitleSub">Real-time analytics and today's schedule</p>
+                        </div>
+                    </div>
+
+                    <div class="header-right">
+                        <div class="live-clock-badge">
+                            <i class="fa-regular fa-clock"></i>
+                            <span id="liveClock">--:--:-- PM</span>
+                        </div>
+
+                        <button class="icon-btn" id="themeToggleBtn" title="Toggle Dark/Light Mode">
+                            <i class="fa-solid fa-moon"></i>
+                        </button>
+
+                        <button class="icon-btn" title="Notifications">
+                            <i class="fa-regular fa-bell"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Content Body Views -->
+                <div class="content-body">
+
+                    <!-- =========================================================
+                         VIEW 1: DASHBOARD
+                         ========================================================= -->
+                    <section id="view-dashboard" class="spa-view active">
+                        <!-- 4 KPI Stat Cards Grid -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-main">
+                                    <div class="stat-label">Total Patients</div>
+                                    <div class="stat-value" id="statPatients">0</div>
+                                    <div class="stat-trend positive">
+                                        <i class="fa-solid fa-arrow-trend-up"></i> +12.4% vs last month
+                                    </div>
+                                </div>
+                                <div class="stat-icon blue">
+                                    <i class="fa-solid fa-hospital-user"></i>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-main">
+                                    <div class="stat-label">Today Appointments</div>
+                                    <div class="stat-value" id="statAppointments">0</div>
+                                    <div class="stat-trend positive">
+                                        <i class="fa-solid fa-circle-check"></i> 85% confirmed
+                                    </div>
+                                </div>
+                                <div class="stat-icon green">
+                                    <i class="fa-solid fa-calendar-day"></i>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-main">
+                                    <div class="stat-label">Active Specialists</div>
+                                    <div class="stat-value" id="statDoctors">0</div>
+                                    <div class="stat-trend neutral">
+                                        <i class="fa-solid fa-user-doctor"></i> 4 Departments
+                                    </div>
+                                </div>
+                                <div class="stat-icon orange">
+                                    <i class="fa-solid fa-user-md"></i>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-main">
+                                    <div class="stat-label">Today Revenue</div>
+                                    <div class="stat-value" id="statRevenue">Rs. 0</div>
+                                    <div class="stat-trend positive">
+                                        <i class="fa-solid fa-arrow-trend-up"></i> +8.2% daily target
+                                    </div>
+                                </div>
+                                <div class="stat-icon purple">
+                                    <i class="fa-solid fa-wallet"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions Launcher -->
+                        <div class="card-box">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-bolt"></i> Quick Command Actions
+                                </div>
+                            </div>
+                            <div class="quick-actions-grid">
+                                <a href="#patients" class="action-btn-card">
+                                    <i class="fa-solid fa-user-plus"></i> Register Patient
+                                </a>
+                                <a href="#appointments" class="action-btn-card">
+                                    <i class="fa-solid fa-calendar-plus"></i> Book Appointment
+                                </a>
+                                <a href="#billing" class="action-btn-card">
+                                    <i class="fa-solid fa-receipt"></i> Generate New Invoice
+                                </a>
+                                <a href="#doctors" class="action-btn-card">
+                                    <i class="fa-solid fa-stethoscope"></i> View Doctor Roster
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Analytics Charts & Doctor Availability Grid -->
+                        <div class="dashboard-grid-2">
+                            <!-- Analytics Chart Card -->
+                            <div class="card-box" style="margin-bottom: 0;">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i class="fa-solid fa-chart-area"></i> Appointment & Revenue Trends
+                                    </div>
+                                </div>
+                                <div style="height: 280px; position: relative;">
+                                    <canvas id="clinicTrendChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Doctors Availability Card -->
+                            <div class="card-box" style="margin-bottom: 0;">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i class="fa-solid fa-user-doctor"></i> On-Duty Doctors
+                                    </div>
+                                    <a href="#doctors" class="btn-sm btn-outline">View All</a>
+                                </div>
+                                <div class="doctor-list-widget" id="doctorWidgetList">
+                                    <!-- Populated dynamically via JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Today's Schedule Table -->
+                        <div class="card-box" style="margin-top: 28px;">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-clock-rotate-left"></i> Today's Schedule
+                                </div>
+                                <a href="#appointments" class="btn-sm btn-outline">Manage Appointments</a>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Ref ID</th>
+                                            <th>Patient Name</th>
+                                            <th>Assigned Doctor</th>
+                                            <th>Scheduled Time</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dashAppointmentTable">
+                                        <!-- Populated dynamically by script.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- =========================================================
+                         VIEW 2: PATIENTS
+                         ========================================================= -->
+                    <section id="view-patients" class="spa-view">
+                        <!-- Action Bar & Registration Card -->
+                        <div class="card-box">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-user-plus"></i> Patient Registration
+                                </div>
+                            </div>
+
+                            <form id="patientForm">
+                                <div class="form-grid-4">
+                                    <div class="form-group">
+                                        <label for="fullName">Full Name *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-user"></i>
+                                            <input type="text" id="fullName" placeholder="e.g. Nimal Perera" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="age">Age *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-calendar"></i>
+                                            <input type="number" id="age" min="1" max="120" placeholder="e.g. 35" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="gender">Gender *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-venus-mars"></i>
+                                            <select id="gender" required>
+                                                <option value="">Select Gender</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="bloodGroup">Blood Group</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-droplet"></i>
+                                            <select id="bloodGroup">
+                                                <option value="O+">O+</option>
+                                                <option value="A+">A+</option>
+                                                <option value="B+">B+</option>
+                                                <option value="AB+">AB+</option>
+                                                <option value="O-">O-</option>
+                                                <option value="A-">A-</option>
+                                                <option value="B-">B-</option>
+                                                <option value="AB-">AB-</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid-2">
+                                    <div class="form-group">
+                                        <label for="phone">Phone Number *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-phone"></i>
+                                            <input type="text" id="phone" placeholder="e.g. 0771234567" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="email">Email Address</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-envelope"></i>
+                                            <input type="email" id="email" placeholder="patient@example.com">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid-2">
+                                    <div class="form-group">
+                                        <label for="address">Residential Address *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-location-dot"></i>
+                                            <input type="text" id="address" placeholder="Residential street & town address" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="medicalHistory">Medical History / Allergies</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-file-medical"></i>
+                                            <input type="text" id="medicalHistory" placeholder="e.g. Asthma, Penicillin Allergy, Hypertension">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+                                    <button type="submit" class="btn" style="width: auto; padding-left: 28px; padding-right: 28px;">
+                                        <i class="fa-solid fa-save"></i> Register Patient Record
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Patient Database Table Card -->
+                        <div class="card-box">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-address-book"></i> Registered Patients Directory
+                                </div>
+                                <div class="input-wrapper" style="width: 280px;">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                    <input type="text" id="patientSearchInput" placeholder="Search Name or Phone">
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Patient Name</th>
+                                            <th>Age & Gender</th>
+                                            <th>Contact Info</th>
+                                            <th>Blood Group</th>
+                                            <th>Address</th>
+                                            <th>Medical History</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="patientTableBody">
+                                        <!-- Populated dynamically by script.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- =========================================================
+                         VIEW 3: APPOINTMENTS
+                         ========================================================= -->
+                    <section id="view-appointments" class="spa-view">
+                        <!-- Appointment Booking Form Card -->
+                        <div class="card-box">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-calendar-plus"></i> Book New Appointment
+                                </div>
+                            </div>
+
+                            <form id="appointmentForm">
+                                <div class="form-grid-2">
+                                    <div class="form-group">
+                                        <label for="patientSelect">Select Registered Patient *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-user-injured"></i>
+                                            <select id="patientSelect" required>
+                                                <option value="">-- Loading Patients --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="doctorSelect">Select Specialist Doctor *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-stethoscope"></i>
+                                            <select id="doctorSelect" required>
+                                                <option value="">-- Loading Doctors --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid-3">
+                                    <div class="form-group">
+                                        <label for="appointmentDate">Appointment Date *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-regular fa-calendar"></i>
+                                            <input type="date" id="appointmentDate" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="appointmentTime">Scheduled Time *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-regular fa-clock"></i>
+                                            <input type="time" id="appointmentTime" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="notes">Symptoms / Clinical Notes</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-pen"></i>
+                                            <input type="text" id="notes" placeholder="e.g. Regular checkup, Fever & Headache">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                                    <button type="submit" class="btn" style="width: auto; padding-left: 28px; padding-right: 28px;">
+                                        <i class="fa-solid fa-calendar-check"></i> Reserve Appointment
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Appointment Roster Table Card -->
+                        <div class="card-box">
+                            <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-list-check"></i> Appointment Roster
+                                </div>
+                                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                    <div class="input-wrapper" style="width: 260px;">
+                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                        <input type="text" id="appointmentSearchInput" placeholder="Search Name or Phone">
+                                    </div>
+                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                        <button class="btn-sm btn-outline filter-apt-btn active" data-filter="all">All</button>
+                                        <button class="btn-sm btn-outline filter-apt-btn" data-filter="Pending">Pending</button>
+                                        <button class="btn-sm btn-outline filter-apt-btn" data-filter="Confirmed">Confirmed</button>
+                                        <button class="btn-sm btn-outline filter-apt-btn" data-filter="Active">Active</button>
+                                        <button class="btn-sm btn-outline filter-apt-btn" data-filter="Completed">Completed</button>
+                                        <button class="btn-sm btn-outline filter-apt-btn" data-filter="Cancelled">Cancelled</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Ref ID</th>
+                                            <th>Patient Name</th>
+                                            <th>Consulting Doctor</th>
+                                            <th>Date & Time</th>
+                                            <th>Notes</th>
+                                            <th>Status</th>
+                                            <th>Status Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="appointmentTableBody">
+                                        <!-- Populated dynamically by script.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- =========================================================
+                         VIEW 4: BILLING
+                         ========================================================= -->
+                    <section id="view-billing" class="spa-view">
+                        <!-- Invoice Generator Form Card -->
+                        <div class="card-box">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-receipt"></i> Generate New Patient Bill
+                                </div>
+                            </div>
+
+                            <form id="billingForm">
+                                <div class="form-grid-3">
+                                    <div class="form-group">
+                                        <label for="billPatient">Select Patient *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-user"></i>
+                                            <select id="billPatient" required>
+                                                <option value="">-- Loading Patients --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="doctorFee">Doctor Consultation Fee (Rs.) *</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-stethoscope"></i>
+                                            <input type="number" id="doctorFee" placeholder="1500" value="1500" min="0" step="50" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="paymentMethod">Payment Method</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-credit-card"></i>
+                                            <select id="paymentMethod">
+                                                <option value="Cash">Cash</option>
+                                                <option value="Credit Card">Credit / Debit Card</option>
+                                                <option value="Insurance">Health Insurance</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid-3">
+                                    <div class="form-group">
+                                        <label for="medicationFee">Pharmacy Charges (Rs.)</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-pills"></i>
+                                            <input type="number" id="medicationFee" placeholder="700" value="700" min="0" step="10">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="labFee">Lab & Diagnostics Charges (Rs.)</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-vial"></i>
+                                            <input type="number" id="labFee" placeholder="300" value="300" min="0" step="10">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="discount">Discount / Waiver (Rs.)</label>
+                                        <div class="input-wrapper">
+                                            <i class="fa-solid fa-percent"></i>
+                                            <input type="number" id="discount" placeholder="0" value="0" min="0" step="10">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-color);">
+                                    <div style="font-size: 16px; font-weight: 700; color: var(--primary);">
+                                        Net Payable Total: <span id="billTotalDisplay">Rs. 2,500.00</span>
+                                    </div>
+
+                                    <button type="submit" class="btn" style="width: auto; padding-left: 28px; padding-right: 28px;">
+                                        <i class="fa-solid fa-calculator"></i> Process & Save Invoice
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Recent Invoices Table Card -->
+                        <div class="card-box">
+                            <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-file-invoice"></i> Recent Billing Invoices
+                                </div>
+                                <div class="input-wrapper" style="width: 280px;">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                    <input type="text" id="billingSearchInput" placeholder="Search Name or Phone">
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Bill Ref</th>
+                                            <th>Patient Name</th>
+                                            <th>Consult Fee</th>
+                                            <th>Pharmacy</th>
+                                            <th>Lab Fee</th>
+                                            <th>Total Net</th>
+                                            <th>Payment</th>
+                                            <th>Status</th>
+                                            <th>Receipt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="billingTableBody">
+                                        <!-- Populated dynamically by script.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- =========================================================
+                         VIEW 5: DOCTORS
+                         ========================================================= -->
+                    <section id="view-doctors" class="spa-view">
+                        <!-- Doctor Roster Table Card -->
+                        <div class="card-box">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fa-solid fa-stethoscope"></i> Clinic Medical Faculty
+                                </div>
+                                <button onclick="openAddDoctorModal()" class="btn" style="width: auto; padding: 8px 18px;">
+                                    <i class="fa-solid fa-user-plus"></i> Add New Doctor
+                                </button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Doctor Specialist</th>
+                                            <th>Qualifications & Field</th>
+                                            <th>Assigned Chamber</th>
+                                            <th>Direct Contact</th>
+                                            <th>Duty Status</th>
+                                            <th>Duty Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="doctorsTableBody">
+                                        <!-- Populated dynamically by script.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- =========================================================
+                         VIEW 6: REPORTS & ANALYTICS
+                         ========================================================= -->
+                    <section id="view-reports" class="spa-view">
+                        <!-- Top Summary KPI Cards -->
+                        <div class="report-summary-grid">
+                            <div class="report-kpi">
+                                <div class="report-kpi-icon blue"><i class="fa-solid fa-user-plus"></i></div>
+                                <div>
+                                    <div class="report-kpi-label">New Patients (Selected Date)</div>
+                                    <div class="report-kpi-value" id="reportKpiPatients">0</div>
+                                </div>
+                            </div>
+                            <div class="report-kpi">
+                                <div class="report-kpi-icon green"><i class="fa-solid fa-calendar-check"></i></div>
+                                <div>
+                                    <div class="report-kpi-label">Appointments Booked</div>
+                                    <div class="report-kpi-value" id="reportKpiAppointments">0</div>
+                                </div>
+                            </div>
+                            <div class="report-kpi">
+                                <div class="report-kpi-icon orange"><i class="fa-solid fa-money-bill-wave"></i></div>
+                                <div>
+                                    <div class="report-kpi-label">Daily Revenue</div>
+                                    <div class="report-kpi-value" id="reportKpiRevenue">Rs. 0</div>
+                                </div>
+                            </div>
+                            <div class="report-kpi">
+                                <div class="report-kpi-icon purple"><i class="fa-solid fa-file-invoice"></i></div>
+                                <div>
+                                    <div class="report-kpi-label">Invoices Generated</div>
+                                    <div class="report-kpi-value" id="reportKpiBills">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date Selection & Global Actions Toolbar -->
+                        <div class="card-box" style="margin-bottom: 20px;">
+                            <div class="report-toolbar">
+                                <label for="reportDatePicker"><i class="fa-regular fa-calendar-days"></i> Select Date:</label>
+                                <input type="date" id="reportDatePicker" class="report-date-input">
+
+                                <button class="btn" id="loadReportBtn" style="width: auto; padding: 9px 20px;">
+                                    <i class="fa-solid fa-rotate"></i> Load Report Data
+                                </button>
+
+                                <div style="margin-left: auto; display: flex; gap: 8px;">
+                                    <button class="btn" id="downloadFullPdfBtn" style="width: auto; padding: 9px 20px; background: #059669;">
+                                        <i class="fa-solid fa-file-pdf"></i> Download Complete PDF
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Report Section Navigation Tabs -->
+                        <div class="report-tabs">
+                            <button class="report-tab active" data-sec="allBills">
+                                <i class="fa-solid fa-database"></i> All Billing Records
+                            </button>
+                            <button class="report-tab" data-sec="dailyPatients">
+                                <i class="fa-solid fa-users"></i> Daily Patients
+                            </button>
+                            <button class="report-tab" data-sec="dailyAppointments">
+                                <i class="fa-solid fa-calendar-day"></i> Daily Appointments
+                            </button>
+                            <button class="report-tab" data-sec="dailyRevenue">
+                                <i class="fa-solid fa-sack-dollar"></i> Daily Revenue
+                            </button>
+                        </div>
+
+                        <!-- Active Report Section Output Container -->
+                        <div class="card-box">
+                            <div class="card-header">
+                                <div class="card-title" id="reportSectionTitle">
+                                    <i class="fa-solid fa-list"></i> Report Records
+                                </div>
+                                <button class="btn-sm btn-outline" id="downloadCurrentPdfBtn">
+                                    <i class="fa-solid fa-download"></i> Download Section PDF
+                                </button>
+                            </div>
+
+                            <div id="reportSummaryBox" class="report-summary-box" style="display: none;">
+                                <div class="report-summary-title">
+                                    <i class="fa-solid fa-calculator"></i> Total Financial Summary
+                                </div>
+                                <div style="font-size: 16px; font-weight: 800; color: var(--primary);" id="reportSummaryTotalVal">
+                                    Rs. 0.00
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="custom-table">
+                                    <thead id="reportTableHead">
+                                        <!-- Dynamic Head -->
+                                    </thead>
+                                    <tbody id="reportTableBody">
+                                        <tr>
+                                            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                                Select a date and click "Load Report Data" to generate analytics.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+
+                <!-- Footer -->
+                <footer class="clinic-footer">
+                    <div>
+                        <div class="footer-bottom-left">
+                            © 2026 Clinic System. All Rights Reserved.
+                        </div>
+                        <div class="footer-bottom-right">
+                            Developed by<span>KAVEEN SATHSARA.</span>
+                        </div>
+                    </div>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         3. MODALS
+         ========================================================================= -->
+
+    <!-- Modal to Add New Doctor -->
+    <div id="addDoctorModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-doctor"></i> Add Doctor Specialist</h3>
+                <button class="close-btn" onclick="closeAddDoctorModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addDoctorForm">
+                    <div class="form-group">
+                        <label for="docFullName">Doctor Full Name *</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-user-md"></i>
+                            <input type="text" id="docFullName" placeholder="e.g. Dr. Samantha Reed" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="docSpecialty">Medical Specialty *</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-heart-pulse"></i>
+                                <input type="text" id="docSpecialty" placeholder="e.g. Cardiology" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="docQualification">Qualifications</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-graduation-cap"></i>
+                                <input type="text" id="docQualification" placeholder="e.g. MBBS, MD, FRCS" value="MBBS, MD">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="docPhone">Contact Phone *</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-phone"></i>
+                                <input type="text" id="docPhone" placeholder="077-111-2233" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="docRoom">Chamber / Room No</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-door-closed"></i>
+                                <input type="text" id="docRoom" placeholder="Chamber 105" value="Chamber 101">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="docStatus">Initial Duty Status</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-circle-dot"></i>
+                            <select id="docStatus">
+                                <option value="Available">Available</option>
+                                <option value="In Surgery">In Surgery</option>
+                                <option value="On Leave">On Leave</option>
+                                <option value="Off Duty">Off Duty</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                        <button type="button" onclick="closeAddDoctorModal()" class="btn-sm btn-outline">Cancel</button>
+                        <button type="submit" class="btn" style="width: auto; padding: 8px 24px;">
+                            <i class="fa-solid fa-save"></i> Save Doctor Record
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Printable Official Invoice Modal -->
+    <div id="printableInvoiceModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 580px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-hospital"></i> MASTER Health Super Clinic</h3>
+                <button class="close-btn" onclick="closeInvoiceModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="invoice-paper">
+                    <div class="invoice-header">
+                        <h2>MASTER HEALTHCARE (PVT) LTD</h2>
+                        <p>Super Clinic & Diagnostic Center</p>
+                        <p>No 124, Healthcare Boulevard, Colombo 03 | Tel: 011-2345678</p>
+                    </div>
+
+                    <div class="invoice-meta">
+                        <div>
+                            <p><strong>Invoice Ref:</strong> <span id="invRef">#INV-501</span></p>
+                            <p><strong>Patient Name:</strong> <span id="invPatient">Sunil Shantha</span></p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p><strong>Date:</strong> <span id="invDate">2026-07-30</span></p>
+                            <p><strong>Payment Method:</strong> <span id="invMethod">Cash</span></p>
+                        </div>
+                    </div>
+
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th>Item Description</th>
+                                <th class="text-right">Amount (Rs.)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Doctor Consultation & Examination</td>
+                                <td class="text-right" id="invDocFee">1,500.00</td>
+                            </tr>
+                            <tr>
+                                <td>Pharmacy & Prescription Drugs</td>
+                                <td class="text-right" id="invMedFee">700.00</td>
+                            </tr>
+                            <tr>
+                                <td>Laboratory Diagnostic Testing</td>
+                                <td class="text-right" id="invLabFee">300.00</td>
+                            </tr>
+                            <tr>
+                                <td>Discount / Special Waiver</td>
+                                <td class="text-right" id="invDiscount">- 0.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="invoice-total-row">
+                        <span>Total Paid Amount:</span>
+                        <span id="invGrandTotal">Rs. 2,500.00</span>
+                    </div>
+
+                    <p style="text-align: center; margin-top: 24px; font-size: 12px; color: #64748b;">
+                        Thank you for choosing MASTER Healthcare. Wish you a speedy recovery!
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer print-hide">
+                <button onclick="window.print()" class="btn" style="width: auto;"><i class="fa-solid fa-print"></i>
+                    Print Official Receipt</button>
+                <button onclick="closeInvoiceModal()" class="btn-sm btn-outline">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Core Script -->
+    <script src="script.js"></script>
+</body>
+
+</html>
