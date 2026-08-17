@@ -2,6 +2,7 @@
 
 A comprehensive web-based management system designed for efficient clinic operations, patient management, and administrative oversight.
 
+🚀 Live Demo: https://clinic-system-application.infinityfreeapp.com/
 ---
 
 ## 📋 Project Overview
