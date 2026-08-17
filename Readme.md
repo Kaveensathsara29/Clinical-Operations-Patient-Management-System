@@ -22,7 +22,7 @@ MASTER Healthcare is a **Super Clinic Portal** that streamlines the workflow of 
 
 ## 🛠 Tech Stack
 * 🎨 **Styling:** SCSS (Compiled to CSS) for advanced, modular, and maintainable design
-* 🌐 **Frontend:** HTML5, CSS3, JavaScript (responsive design)
+* 🌐 **Frontend:** HTML5, JavaScript (responsive design)
 * ⚙️ **Backend:** PHP
 * 🗄️ **Database:** MySQL
 
