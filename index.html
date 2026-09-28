@@ -973,13 +973,16 @@
                 <footer class="clinic-footer">
                     <div>
                         <div class="footer-bottom-left">
-                            © 2026 Clinic System. All Rights Reserved.
+                            © <span id="year"></span>&nbsp; MASTERCLINIC. All Rights Reserved.
                         </div>
                         <div class="footer-bottom-right">
                             Developed by<span>KAVEEN SATHSARA.</span>
                         </div>
                     </div>
                 </footer>
+                <script>
+                    document.getElementById('year').textContent = new Date().getFullYear();
+                </script>
             </main>
         </div>
     </div>
