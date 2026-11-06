@@ -1,30 +1,31 @@
-# 🌟 MASTER Healthcare - Super Clinic Portal 🩺
+# 🌟 Clinical Operations & Patient Management System 🩺
 
-A comprehensive web-based management system designed for efficient clinic operations, patient management, and administrative oversight.
-
-🚀 Live Demo: https://clinic-system-application.infinityfreeapp.com/
----
-
-## 📋 Project Overview
-MASTER Healthcare is a **Super Clinic Portal** that streamlines the workflow of a medical facility. The system provides a centralized dashboard for administrators to monitor daily operations, manage patient records, coordinate doctor schedules, and handle billing.
+An end-to-end web-based portal designed to streamline clinic workflows, automate financial billing, manage patient records, and deliver real-time operational analytics for healthcare administrators.
 
 ---
 
-## 🚀 Key Features
-* 👤 **Patient Management:** Register and maintain a directory of patients with their medical histories.
-* 📅 **Appointment System:** Book, track, and manage patient appointments.
-* 💰 **Billing & Revenue:** Generate invoices, track pharmacy/lab fees, and monitor clinic revenue.
-* 👨‍⚕️ **Doctor Roster:** Manage specialist schedules and on-duty status.
-* 📊 **Dashboard Analytics:** Real-time visualization of clinic trends, appointment status, and revenue performance.
-* ⚙️ **Admin Control:** Comprehensive control over clinic faculty and reporting.
+## ✨ Key Features
+
+- 👤 **Patient & Appointment Directory** — Centralized portal to register patients, track medical histories, and manage scheduling efficiently.
+- 💳 **Automated Financial Billing Engine** — Aggregates lab, pharmacy, and consultation fees into detailed invoices with real-time payment status tracking.
+- 📊 **Interactive Analytics Dashboard** — Real-time data visualization of patient trends, daily revenue metrics, and doctor rosters.
+- 🔒 **Relational Data Architecture** — Structured MySQL schema engineered for fast, secure query execution and zero data redundancy.
 
 ---
 
 ## 🛠 Tech Stack
-* 🎨 **Styling:** SCSS (Compiled to CSS) for advanced, modular, and maintainable design
-* 🌐 **Frontend:** HTML5, JavaScript (responsive design)
-* ⚙️ **Backend:** PHP
-* 🗄️ **Database:** MySQL
+
+- **Frontend:** JavaScript (ES6+), SCSS, HTML5
+- **Backend:** PHP
+- **Database:** MySQL
 
 ---
-*Note: This system is designed for managing clinic operations and should be deployed in a secure environment.*
+
+## 🗄️ Database Architecture
+
+- Fully normalized relational schema separating patient profiles, appointment logs, billing items, and doctor availability.
+- Custom SQL queries optimized to maintain strict data integrity without duplication.
+
+
+
+
